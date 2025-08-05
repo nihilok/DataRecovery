@@ -173,6 +173,21 @@ class PhotoOrganizer:
         self.logger.info(f"Statistics: {self.stats}")
         return self.stats
 
+    @staticmethod
+    def print_exif_data(file_path: Path):
+        """Print all EXIF data for a given image file."""
+        try:
+            with Image.open(file_path) as image:
+                exif_data = image._getexif()
+                if not exif_data:
+                    print("No EXIF data found.")
+                    return
+                for tag_id, value in exif_data.items():
+                    tag = TAGS.get(tag_id, tag_id)
+                    print(f"{tag}: {value}")
+        except Exception as e:
+            print(f"Error reading EXIF from {file_path}: {e}")
+
 
 def main():
     """Command line interface."""
@@ -208,6 +223,12 @@ Examples:
         help='Enable verbose logging'
     )
 
+    parser.add_argument(
+        '--exif',
+        metavar='FILE',
+        help='Show all EXIF data for a single image file and exit'
+    )
+
     args = parser.parse_args()
 
     # Set logging level
@@ -223,6 +244,11 @@ Examples:
     if not source_path.is_dir():
         print(f"Error: '{source_path}' is not a directory")
         return 1
+
+    # Print EXIF data for a single file if --exif is provided
+    if args.exif:
+        PhotoOrganizer.print_exif_data(Path(args.exif))
+        return 0
 
     # Create organizer and run
     organizer = PhotoOrganizer(
