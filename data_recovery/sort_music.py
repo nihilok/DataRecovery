@@ -27,7 +27,7 @@ except ImportError:
 class MusicOrganizer:
     """Organizes music files based on their metadata tags."""
 
-    SUPPORTED_FORMATS = {'.mp3', '.flac'}
+    SUPPORTED_FORMATS = {'.mp3', '.flac', '.ogg', '.m4a', '.wav', '.ape'}
 
     def __init__(self, source_dir: str, target_dir: str, dry_run: bool = False):
         self.source_dir = Path(source_dir).resolve()
