@@ -240,6 +240,41 @@ class FileSplitter:
             "estimated_subdirs": len(self.calculate_splits(files))
         }
 
+    def flatten_directory(self, source_dir: Path, output_dir: Path) -> None:
+        """
+        Move all files from subdirectories of source_dir into output_dir, flattening the structure.
+        Args:
+            source_dir: Directory containing batch subdirectories
+            output_dir: Target directory to move all files into
+        """
+        self.logger.info(f"Flattening files from {source_dir} into {output_dir}")
+        if not self.dry_run:
+            output_dir.mkdir(parents=True, exist_ok=True)
+        moved = 0
+        for subdir in source_dir.iterdir():
+            if subdir.is_dir():
+                for file_path in subdir.iterdir():
+                    if file_path.is_file():
+                        destination = output_dir / file_path.name
+                        # Handle duplicate filenames
+                        counter = 1
+                        original_destination = destination
+                        while destination.exists():
+                            stem = original_destination.stem
+                            suffix = original_destination.suffix
+                            destination = output_dir / f"{stem}_{counter:03d}{suffix}"
+                            counter += 1
+                        if self.dry_run:
+                            self.logger.info(f"  [DRY RUN] Would move: {file_path} -> {destination}")
+                        else:
+                            try:
+                                shutil.move(str(file_path), str(destination))
+                                self.logger.info(f"  Moved: {file_path.name} -> {destination}")
+                                moved += 1
+                            except (OSError, shutil.Error) as e:
+                                self.logger.error(f"  Error moving {file_path} to {destination}: {e}")
+        self.logger.info(f"Flattening completed. {moved} files moved.")
+
 
 def main():
     """Main CLI entry point."""
@@ -272,6 +307,11 @@ def main():
         action="store_true",
         help="Show statistics about the source directory and exit"
     )
+    parser.add_argument(
+        "--flatten",
+        action="store_true",
+        help="Flatten all files from batch subdirectories into the output directory (reverse operation)"
+    )
 
     args = parser.parse_args()
 
@@ -298,6 +338,15 @@ def main():
         for ext, count in sorted(stats['file_types'].items()):
             print(f"  {ext}: {count} files")
         return 0
+
+    # Perform flatten if requested
+    if args.flatten:
+        try:
+            splitter.flatten_directory(args.source, args.output)
+            return 0
+        except Exception as e:
+            print(f"Error: {e}")
+            return 1
 
     # Perform the split
     try:

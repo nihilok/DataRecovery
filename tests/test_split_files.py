@@ -390,3 +390,30 @@ class TestFileSplitterCLI(unittest.TestCase):
             self.assertIn(".jpg: 1", stats_output)
             self.assertIn(".pdf: 1", stats_output)
 
+    @patch('argparse.ArgumentParser.parse_args')
+    def test_cli_flatten_option(self, mock_parse_args):
+        """Test CLI --flatten option."""
+        from data_recovery.split_files import main
+        # Create batch subdirectories and files
+        batch1 = self.source_dir / "batch_001"
+        batch2 = self.source_dir / "batch_002"
+        batch1.mkdir()
+        batch2.mkdir()
+        (batch1 / "a.txt").write_text("A")
+        (batch2 / "b.txt").write_text("B")
+        # Mock parsed arguments
+        mock_args = MagicMock()
+        mock_args.source = self.source_dir
+        mock_args.output = self.output_dir
+        mock_args.max_size = 1.0
+        mock_args.dry_run = False
+        mock_args.stats = False
+        mock_args.flatten = True
+        mock_parse_args.return_value = mock_args
+        # Should run without error
+        result = main()
+        self.assertEqual(result, 0)
+        # Files should be in output_dir
+        files = set(f.name for f in self.output_dir.iterdir())
+        self.assertIn("a.txt", files)
+        self.assertIn("b.txt", files)
