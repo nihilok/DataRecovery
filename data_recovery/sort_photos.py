@@ -188,6 +188,28 @@ class PhotoOrganizer:
         except Exception as e:
             print(f"Error reading EXIF from {file_path}: {e}")
 
+    @staticmethod
+    def write_exif_for_directory(dir_path: Path, output_file: Path):
+        """Loop through all files in dir_path, append EXIF data to output_file in readable format."""
+        from PIL import Image
+        from PIL.ExifTags import TAGS
+        with open(output_file, 'w', encoding='utf-8') as out:
+            for file_path in sorted(dir_path.iterdir()):
+                if not file_path.is_file():
+                    continue
+                try:
+                    with Image.open(file_path) as image:
+                        exif_data = image._getexif()
+                        out.write(f"==========\n{file_path.name}\n")
+                        if not exif_data:
+                            out.write("No EXIF data found.\n")
+                        else:
+                            for tag_id, value in exif_data.items():
+                                tag = TAGS.get(tag_id, tag_id)
+                                out.write(f"{tag}: {value}\n")
+                except Exception as e:
+                    out.write(f"Error reading EXIF from {file_path}: {e}\n")
+
 
 def main():
     """Command line interface."""
@@ -231,6 +253,13 @@ Examples:
         help='Show all EXIF data for a single image file and exit'
     )
 
+    parser.add_argument(
+        '--exif-dir',
+        nargs=2,
+        metavar=('DIR', 'OUTFILE'),
+        help='Write EXIF data for all files in DIR to OUTFILE (one file, readable format) and exit'
+    )
+
     args = parser.parse_args()
 
     # Set logging level
@@ -240,6 +269,12 @@ Examples:
     # Print EXIF data for a single file if --exif is provided
     if args.exif:
         PhotoOrganizer.print_exif_data(Path(args.exif))
+        return 0
+    # Write EXIF data for all files in a directory if --exif-dir is provided
+    if args.exif_dir:
+        dir_path, out_path = args.exif_dir
+        PhotoOrganizer.write_exif_for_directory(Path(dir_path), Path(out_path))
+        print(f"Wrote EXIF data for all files in {dir_path} to {out_path}")
         return 0
 
     # Validate directories
