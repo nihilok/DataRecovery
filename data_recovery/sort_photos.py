@@ -203,11 +203,13 @@ Examples:
 
     parser.add_argument(
         'source_dir',
+        nargs='?',
         help='Source directory containing photos to organize'
     )
 
     parser.add_argument(
         'target_dir',
+        nargs='?',
         help='Target directory for organized photos'
     )
 
@@ -241,6 +243,8 @@ Examples:
         return 0
 
     # Validate directories
+    if not args.source_dir or not args.target_dir:
+        parser.error('the following arguments are required: source_dir, target_dir')
     source_path = Path(args.source_dir)
     if not source_path.exists():
         print(f"Error: Source directory '{source_path}' does not exist")
