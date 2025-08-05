@@ -68,15 +68,16 @@ class PhotoOrganizer:
                 # Look for date taken tags
                 date_tags = ['DateTime', 'DateTimeOriginal', 'DateTimeDigitized']
                 for tag_id, value in exif_data.items():
+                    clean_value = value.strip().strip('\x00') if isinstance(value, str) else value
                     tag_name = TAGS.get(tag_id, tag_id)
                     if tag_name in date_tags:
                         try:
                             # Parse the date string (format: "YYYY:MM:DD HH:MM:SS")
-                            return datetime.strptime(value, "%Y:%m:%d %H:%M:%S"), False
+                            return datetime.strptime(clean_value, "%Y:%m:%d %H:%M:%S"), False
                         except ValueError:
                             # Try alternative format
                             try:
-                                return datetime.strptime(value, "%Y-%m-%d %H:%M:%S"), False
+                                return datetime.strptime(clean_value, "%Y-%m-%d %H:%M:%S"), False
                             except ValueError:
                                 continue
                 return None, False
