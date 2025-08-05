@@ -85,6 +85,21 @@ class PhotoOrganizer:
             self.logger.warning(f"Error reading EXIF from {file_path}: {e}")
             return None, True
 
+    def extract_exif_make(self, file_path: Path) -> str:
+        """Extract camera Make from EXIF data, or return 'Unknown' if not found."""
+        try:
+            with Image.open(file_path) as image:
+                exif_data = image._getexif()
+                if exif_data is None:
+                    return "Unknown"
+                for tag_id, value in exif_data.items():
+                    tag_name = TAGS.get(tag_id, tag_id)
+                    if tag_name == "Make":
+                        return str(value).strip() or "Unknown"
+        except Exception:
+            pass
+        return "Unknown"
+
     def generate_target_path(self, file_path: Path, date_taken: datetime) -> Path:
         """Generate the target path based on date taken."""
         year = date_taken.strftime("%Y")
@@ -162,8 +177,18 @@ class PhotoOrganizer:
                 self.stats['errors'] += 1
                 continue
             if date_taken is None:
-                self.logger.info(f"Skipping {file_path.name} - no EXIF date found")
-                self.stats['skipped'] += 1
+                # Try to sort by Make if no EXIF date
+                make = self.extract_exif_make(file_path)
+                if make == "Unknown":
+                    self.logger.info(f"Skipping {file_path.name} - no EXIF date or Make found")
+                    self.stats['skipped'] += 1
+                    continue
+                # Place in Make subdirectory
+                target_path = self.target_dir / "by_make" / make / file_path.name
+                if self.move_file(file_path, target_path):
+                    self.stats['moved'] += 1
+                else:
+                    self.stats['errors'] += 1
                 continue
             target_path = self.generate_target_path(file_path, date_taken)
             if self.move_file(file_path, target_path):
