@@ -235,6 +235,11 @@ Examples:
     if args.verbose:
         logging.getLogger().setLevel(logging.DEBUG)
 
+    # Print EXIF data for a single file if --exif is provided
+    if args.exif:
+        PhotoOrganizer.print_exif_data(Path(args.exif))
+        return 0
+
     # Validate directories
     source_path = Path(args.source_dir)
     if not source_path.exists():
@@ -244,11 +249,6 @@ Examples:
     if not source_path.is_dir():
         print(f"Error: '{source_path}' is not a directory")
         return 1
-
-    # Print EXIF data for a single file if --exif is provided
-    if args.exif:
-        PhotoOrganizer.print_exif_data(Path(args.exif))
-        return 0
 
     # Create organizer and run
     organizer = PhotoOrganizer(
