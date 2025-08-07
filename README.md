@@ -1,199 +1,225 @@
-# Music File Organizer
+# Data Recovery Toolkit
 
-A Python script that automatically organizes your music files (MP3 and FLAC) into a logical directory structure based on their ID3 metadata tags. The script reads artist, album, and track information from the files and organizes them into a clean `Artist/Album/Track` hierarchy.
+A collection of Python scripts designed to help organize and manage files recovered from data recovery operations. These tools are particularly useful for cleaning up and organizing files recovered by tools like PhotoRec, TestDisk, or similar data recovery software.
 
-## Features
+## Overview
 
-- **Recursive file discovery**: Finds music files in any nested directory structure
-- **Metadata extraction**: Reads ID3 tags from MP3 and FLAC files using the `mutagen` library
-- **Smart file naming**: Creates clean, organized filenames with track numbers
-- **Duplicate handling**: Automatically renames duplicates by adding numeric suffixes
-- **Dry run mode**: Preview what changes will be made without actually moving files
-- **Cross-platform**: Works on Windows, macOS, and Linux
-- **Logging**: Comprehensive logging of all operations
-- **Error handling**: Graceful handling of corrupted files or missing metadata
+When data recovery tools extract files from damaged drives, they often dump everything into large directories with cryptic filenames and no organization. This toolkit provides scripts to:
+
+- Analyze file type distributions
+- Remove duplicate files
+- Organize files by type and metadata
+- Split large directories into manageable chunks
+- Sort media files by date and metadata
+
+## Scripts
+
+### 1. count_types.py
+**File Type Counter**
+
+Recursively scans directories to count and analyze file types by extension.
+
+```bash
+python -m data_recovery.count_types /path/to/recovered/files
+```
+
+**Features:**
+- Counts files by extension
+- Provides detailed statistics
+- Option to include/exclude hidden files
+- Helpful for understanding what was recovered
+
+### 2. deduplicate.py
+**Duplicate File Remover**
+
+Finds and removes duplicate files by comparing SHA-256 hashes, keeping only one copy of each unique file.
+
+```bash
+python -m data_recovery.deduplicate /path/to/files --dry-run
+python -m data_recovery.deduplicate /path/to/files  # Actually remove duplicates
+```
+
+**Features:**
+- Content-based deduplication using SHA-256 hashes
+- Dry-run mode to preview changes
+- Preserves the first occurrence of each file
+- Essential for cleaning up PhotoRec recoveries
+
+### 3. move_junk.py
+**File Extension Organizer**
+
+Moves files with specified extensions into organized directories by file type.
+
+```bash
+python -m data_recovery.move_junk /source/dir /target/dir --extensions txt log tmp
+```
+
+**Features:**
+- Organizes files by extension into separate folders
+- Customizable list of extensions to move
+- Prevents overwriting with automatic renaming
+- Perfect for separating different file types
+
+### 4. sort_music.py
+**Music File Organizer**
+
+Organizes MP3 and FLAC files by reading ID3/metadata tags into Artist/Album/Track structure.
+
+```bash
+python -m data_recovery.sort_music /path/to/music /organized/music
+```
+
+**Features:**
+- Reads ID3v2 tags from MP3 files
+- Reads metadata from FLAC files
+- Creates Artist/Album directory structure
+- Handles missing metadata gracefully
+- Renames files with track numbers and titles
+
+### 5. sort_photos.py
+**Photo File Organizer**
+
+Organizes photos by reading EXIF data and sorting into Year/Month/Date-Time structure.
+
+```bash
+python -m data_recovery.sort_photos /path/to/photos /organized/photos --dry-run
+```
+
+**Features:**
+- Reads EXIF data from images
+- Supports multiple image formats (JPEG, PNG, TIFF, etc.)
+- Creates Year/Month directory structure
+- Falls back to file modification date when EXIF is missing
+- Timestamp-based filename prefixes prevent conflicts
+
+### 6. sort_videos.py
+**Video File Organizer**
+
+Organizes video files by reading metadata and sorting into Year/Month/Date-Time structure.
+
+```bash
+python -m data_recovery.sort_videos /path/to/videos /organized/videos --dry-run
+```
+
+**Features:**
+- Uses FFmpeg/ffprobe to read video metadata
+- Supports many video formats (MP4, MOV, AVI, MKV, etc.)
+- Creates Year/Month directory structure
+- Falls back to file modification date when metadata is missing
+- Requires FFmpeg to be installed
+
+### 7. split_files.py
+**Directory Splitter**
+
+Splits large directories into smaller subdirectories with size limits.
+
+```bash
+python -m data_recovery.split_files /large/directory --max-size 1GB --dry-run
+```
+
+**Features:**
+- Splits directories by total file size
+- Customizable size limits
+- Preserves file organization within splits
+- Useful for burning to DVDs or managing large datasets
 
 ## Installation
 
-1. Install the required dependency:
-```bash
-pip install mutagen
-```
+1. Clone or download this repository
+2. Install required dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
+3. For video sorting, install FFmpeg:
+   ```bash
+   # Ubuntu/Debian
+   sudo apt install ffmpeg
+   
+   # macOS
+   brew install ffmpeg
+   
+   # Windows
+   # Download from https://ffmpeg.org/
+   ```
 
-2. Clone or download this repository to your local machine.
+## Common Workflow
 
-## Usage
+Here's a typical workflow for organizing recovered files:
 
-### Command Line Interface
+1. **Analyze what you have:**
+   ```bash
+   python -m data_recovery.count_types /recovered/files
+   ```
 
-The script can be run from the command line with the following syntax:
+2. **Remove duplicates:**
+   ```bash
+   python -m data_recovery.deduplicate /recovered/files --dry-run
+   python -m data_recovery.deduplicate /recovered/files
+   ```
 
-```bash
-python data_recovery/sort_music.py SOURCE_DIR TARGET_DIR [OPTIONS]
-```
+3. **Move unwanted file types:**
+   ```bash
+   python -m data_recovery.move_junk /recovered/files /junk --extensions tmp log bak
+   ```
 
-#### Arguments:
-- `SOURCE_DIR`: Directory containing your unsorted music files
-- `TARGET_DIR`: Directory where organized music will be placed
+4. **Organize by media type:**
+   ```bash
+   python -m data_recovery.sort_photos /recovered/files /organized/photos --dry-run
+   python -m data_recovery.sort_videos /recovered/files /organized/videos --dry-run
+   python -m data_recovery.sort_music /recovered/files /organized/music --dry-run
+   ```
 
-#### Options:
-- `--dry-run`: Show what would be done without actually moving files
-- `--verbose`: Enable detailed logging output
+5. **Split if needed:**
+   ```bash
+   python -m data_recovery.split_files /organized --max-size 4GB
+   ```
 
-### Examples
+## Safety Features
 
-1. **Dry run to preview changes**:
-```bash
-python data_recovery/sort_music.py ./messy_music ./organized_music --dry-run
-```
+- **Dry-run mode**: Most scripts support `--dry-run` to preview changes
+- **Automatic backups**: Some scripts can create backups before modifications
+- **Duplicate handling**: Automatic renaming prevents file overwrites
+- **Comprehensive logging**: Detailed logs of all operations
 
-2. **Actually organize the files**:
-```bash
-python data_recovery/sort_music.py ./messy_music ./organized_music
-```
+## Requirements
 
-3. **With verbose logging**:
-```bash
-python data_recovery/sort_music.py ./messy_music ./organized_music --verbose
-```
-
-### Programmatic Usage
-
-You can also use the `MusicOrganizer` class directly in your Python code:
-
-```python
-from data_recovery.sort_music import MusicOrganizer
-
-# Create organizer instance
-organizer = MusicOrganizer(
-    source_dir="/path/to/messy/music",
-    target_dir="/path/to/organized/music",
-    dry_run=True  # Set to False to actually move files
-)
-
-# Run the organization
-stats = organizer.organize_music()
-
-print(f"Processed: {stats['processed']} files")
-print(f"Moved: {stats['moved']} files")
-print(f"Errors: {stats['errors']} files")
-```
-
-## How It Works
-
-1. **File Discovery**: The script recursively scans the source directory for MP3 and FLAC files
-2. **Metadata Extraction**: For each music file, it reads ID3 tags to extract:
-   - Artist name
-   - Album name
-   - Track title
-   - Track number
-   - Date/Year
-   - Genre
-3. **Path Generation**: Creates a target path structure: `Artist/Album/TrackNumber - Title.ext`
-4. **File Organization**: Moves files to the new location, creating directories as needed
-5. **Duplicate Handling**: If a file already exists at the target location, it adds a numeric suffix
-
-## Directory Structure
-
-The script organizes files into this structure:
-
-```
-Organized Music/
-├── Artist Name/
-│   ├── Album Name/
-│   │   ├── 01 - Song Title.mp3
-│   │   ├── 02 - Another Song.mp3
-│   │   └── 03 - Final Track.flac
-│   └── Another Album/
-│       └── 01 - Solo Track.mp3
-└── Different Artist/
-    └── Their Album/
-        └── 01 - Their Song.flac
-```
-
-## Filename Sanitization
-
-The script automatically handles problematic characters in filenames by:
-- Replacing invalid characters (`< > : " / \ | ? *`) with underscores
-- Removing leading/trailing dots and spaces
-- Limiting filename length to 200 characters
-- Using "Unknown Artist", "Unknown Album", etc. for missing metadata
-
-## Error Handling
-
-- Files with corrupted or missing metadata are placed in "Unknown Artist/Unknown Album"
-- Files that cannot be read are logged as errors but don't stop the process
-- Duplicate filenames are handled by adding numeric suffixes (`_1`, `_2`, etc.)
-
-## Supported File Types
-
-Currently supports:
-- **MP3** files (with ID3 tags)
-- **FLAC** files (with Vorbis comments)
-
-Other file types (JPG, PNG, TXT, etc.) are ignored and left in place.
+- Python 3.8+
+- PIL/Pillow (for photo EXIF data)
+- mutagen (for music metadata)
+- FFmpeg (for video metadata)
 
 ## Testing
 
-Run the comprehensive test suite:
+Run the test suite to verify functionality:
 
 ```bash
-python tests/test_sort_music.py
+python -m unittest discover tests/
 ```
 
-The tests cover:
-- Filename sanitization
-- Metadata extraction from both MP3 and FLAC files
-- Target path generation
-- File discovery
-- Dry run functionality
-- Actual file moving
-- Duplicate handling
-- Integration testing
+## Contributing
 
-## Example Run
-
-```bash
-$ python data_recovery/sort_music.py ./Downloads/Music ./Music --dry-run
-
-2025-07-19 10:30:15,123 - INFO - Starting music organization...
-2025-07-19 10:30:15,124 - INFO - Source: /home/user/Downloads/Music
-2025-07-19 10:30:15,124 - INFO - Target: /home/user/Music
-2025-07-19 10:30:15,124 - INFO - Dry run: True
-2025-07-19 10:30:15,125 - INFO - Found 156 music files
-2025-07-19 10:30:15,126 - INFO - DRY RUN: Would move random_song.mp3 -> The Beatles/Abbey Road/01 - Come Together.mp3
-2025-07-19 10:30:15,127 - INFO - DRY RUN: Would move track2.flac -> Pink Floyd/Dark Side of the Moon/02 - Breathe.flac
-...
-2025-07-19 10:30:16,234 - INFO - Organization complete!
-
-==================================================
-ORGANIZATION SUMMARY
-==================================================
-Files processed: 156
-Files moved: 156
-Files skipped: 0
-Errors: 0
-
-This was a dry run - no files were actually moved.
-Remove --dry-run to perform the actual organization.
-```
-
-## Troubleshooting
-
-### Common Issues:
-
-1. **"mutagen library not found"**: Install with `pip install mutagen`
-2. **Permission errors**: Ensure you have read/write access to both source and target directories
-3. **Files not found**: Check that the source directory path is correct
-4. **Missing metadata**: Files without proper ID3 tags will be placed in "Unknown Artist/Unknown Album"
-
-### Tips:
-
-- Always run with `--dry-run` first to preview changes
-- Use `--verbose` for detailed logging when troubleshooting
-- The script preserves original ID3 tags - only the file location and name change
-- Large collections may take time to process - be patient!
+Contributions are welcome! Please ensure all new features include tests and follow the existing code style.
 
 ## License
 
-This project is open source. Feel free to modify and distribute as needed.
+This project is open source. See LICENSE file for details.
+
+## Troubleshooting
+
+### Common Issues
+
+**"ffprobe not found" error:**
+- Install FFmpeg on your system
+- Ensure ffprobe is in your PATH
+
+**Permission errors:**
+- Run with appropriate permissions
+- Check file/directory ownership
+
+**Out of memory with large files:**
+- Use the split_files.py script first
+- Process smaller batches
+
+**Metadata not found:**
+- Scripts fall back to file modification dates
+- Some recovered files may have corrupted metadata
