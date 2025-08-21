@@ -206,7 +206,7 @@ class VideoOrganizer:
     def generate_target_path(self, file_path: Path, date_taken: datetime) -> Path:
         """Generate the target path based on date taken."""
         year = date_taken.strftime("%Y")
-        month = date_taken.strftime("%m-%B")  # "01-January" format
+        month = date_taken.strftime("%m")  # Just the month number: "06"
 
         # Create timestamp for filename
         timestamp = date_taken.strftime("%Y%m%d_%H%M%S")
@@ -216,7 +216,7 @@ class VideoOrganizer:
         original_name = self.sanitize_filename(original_name)
 
         # Build new filename with timestamp
-        filename = f"{timestamp}_{original_name}{file_path.suffix}"
+        filename = f"{timestamp}{file_path.suffix}"
         filename = self.sanitize_filename(filename)
 
         return self.target_dir / year / month / filename
